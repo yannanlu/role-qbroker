@@ -1,0 +1,8 @@
+check process {{flow_name}}
+    matching "-DQF_{{id}} "
+    start program = "/usr/bin/systemctl start {{flow_name}}"
+    stop program = "/usr/bin/systemctl stop {{flow_name}}"
+    if does not exist 5 cycles then restart
+    if cpu usage > 35% for 5 cycles then alert
+    if memory usage > 35% for 5 cycles then alert
+    if 3 restarts within 5 cycles then timeout

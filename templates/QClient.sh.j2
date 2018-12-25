@@ -1,0 +1,21 @@
+#!/bin/bash
+
+QBDIR={{dir}}
+JAVA={{java}}
+
+CLASSPATH=\
+{% for f in jar_files %}
+$QBDIR/lib/{{f}}:\
+{% endfor %}
+$QBDIR/lib/:$CLASSPATH
+export CLASSPATH
+
+if [[ "$1" =~ ^-D ]]
+then
+  JAVA_OPTS="$1"
+fi
+
+TZ=US/Eastern
+export TZ
+
+$JAVA -DQClient -Dfile.encoding=UTF8 $JAVA_OPTS org.qbroker.flow.QClient "$@"

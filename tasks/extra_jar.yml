@@ -1,0 +1,36 @@
+---
+- name: Get stats of extra_jar
+  stat:
+    path: "/var/cache/ansible/{{qbroker_extra_jar}}"
+    get_md5: no
+    get_checksum: no
+  register: st_ex_jar
+
+- name: Get the extra_jar via s3
+  command: "aws s3 --region {{region|default('us-east-2')}} cp {{qbroker_repo_url}}/{{qbroker_extra_jar}} /var/cache/ansible/"
+  when: not st_ex_jar.stat.exists and qbroker_repo_url|regex_search('^s3:')
+  register: new_jar_ex1
+
+- name: Get the extra_jar via http
+  get_url:
+    url: "{{qbroker_repo_url}}/{{qbroker_extra_jar}}"
+    dest: /var/cache/ansible/
+    validate_certs: "{{qbroker_validate_certs}}"
+  when: not st_ex_jar.stat.exists and not qbroker_repo_url|regex_search('^s3:')
+  register: new_jar_ex2
+
+- name: Get stats of extra_jar
+  stat:
+    path: "{{qbroker_dir}}/lib/{{qbroker_extra_jar}}"
+    get_md5: no
+    get_checksum: no
+  register: st_extra_jar
+
+- name: Copy extra_jar
+  copy:
+    src: "/var/cache/ansible/{{qbroker_extra_jar}}"
+    dest: "{{qbroker_dir}}/lib"
+    remote_src: yes
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+  when: new_jar_ex1 is changed or new_jar_ex2 is changed or not st_extra_jar.stat.exists

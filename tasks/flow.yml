@@ -1,0 +1,87 @@
+---
+- name: Create sub dirs for service
+  file:
+    path: "{{qbroker_dir}}/{{item}}/{{qbroker_service_id}}"
+    state: directory
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+    mode: 0775
+  with_items:
+    - flow
+    - jndi
+
+- include: artifact.yml
+
+- include: security_plugin.yml
+  when: qbroker_security_plugin != None
+
+- name: Copy json files
+  copy:
+    src: "flow/{{item}}"
+    dest: "{{qbroker_dir}}/flow/{{qbroker_service_id}}/"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+    mode: 0664
+  with_items: "{{qbroker_json_files}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Template of QFlow.sh
+  template:
+    src: ../../qbroker/templates/QFlow.sh.j2
+    dest: "{{qbroker_dir}}/bin/QFlow_{{qbroker_service_id}}.sh"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+    mode: 0775
+  vars:
+    id: "{{qbroker_service_id}}"
+    qb_dir: "{{qbroker_dir}}"
+    qb_user: "{{qbroker_user}}"
+    log_dir: "{{qbroker_logdir}}"
+    java: "{{qbroker_java}}"
+    java_opts: "{{qbroker_java_opts}}"
+    jar_files: "{{qbroker_jar_files}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Template of QFlow.init
+  template:
+    src: ../../qbroker/templates/QFlow.init.j2
+    dest: "{{qbroker_dir}}/init.d/S50QFlow_{{qbroker_service_id}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+    mode: 0775
+  vars:
+    id: "{{qbroker_service_id}}"
+    qb_dir: "{{qbroker_dir}}"
+    qb_user: "{{qbroker_user}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Template of flow.service
+  template:
+    src: ../../qbroker/templates/flow.service.j2
+    dest: "{{qbroker_systemd_dir}}/system/{{role_name}}.service"
+    mode: 0644
+  vars:
+    id: "{{qbroker_service_id}}"
+    qb_dir: "{{qbroker_dir}}"
+    qb_user: "{{qbroker_user}}"
+    qb_group: "{{qbroker_group}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Get stats of monitrc
+  stat:
+    path: "{{monit_dir}}/monitrc"
+    get_md5: no
+    get_checksum: no
+  register: st_monitrc
+
+- name: Template of flow.monit
+  template:
+    src: ../../qbroker/templates/flow.monit.j2
+    dest: "{{monit_includedir}}/{{role_name}}.monit"
+    mode: 0644
+  vars:
+    id: "{{qbroker_service_id}}"
+    qb_dir: "{{qbroker_dir}}"
+    flow_name: "{{role_name}}"
+  when: st_monitrc.stat.exists
+  notify: Restart_monit.service

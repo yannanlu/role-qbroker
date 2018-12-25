@@ -17,7 +17,8 @@ case $1 in
     then
         cd $SCRIPT_HOME; ./$START_SCRIPT
     else
-        /bin/su - $OWNER -c "cd $SCRIPT_HOME; ./$START_SCRIPT"
+        echo "It can only be started by the owner: $OWNER"
+        exit 1
     fi
     ;;
 

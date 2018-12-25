@@ -10,6 +10,15 @@
     - flow
     - jndi
 
+- include: artifact.yml
+  vars:
+    my_service: tomcat.service
+
+- include: security_plugin.yml
+  vars:
+    my_service: tomcat.service
+  when: qbroker_security_plugin != None
+
 - name: Template of context.xml
   template:
     src: context.xml.j2

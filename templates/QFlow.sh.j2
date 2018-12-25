@@ -3,9 +3,10 @@
 DAEMON=org.qbroker.flow.QFlow
 QBDIR={{qb_dir}}
 LOGDIR={{log_dir}}
+OWNER={{qb_user}}
 ID={{id}}
+JAVA={{java}}
 JAVA_OPTS="{{java_opts}}"
-JAVA=/usr/bin/java
 PS=/bin/ps
 
 CLASSPATH=\
@@ -62,7 +63,15 @@ case $1 in
         test "$QFLOW_PIDS" != "" && /bin/kill $QFLOW_PIDS
 
         cd $QBDIR/bin
-        $JAVA -DQF_${ID} -DLoggerName=QFlow_${ID} ${JAVA_OPTS} $DAEMON -I $QBDIR/flow/${ID}/Flow.json >> $LOGDIR/QFlow_${ID}.out 2>&1 &
+        myid=`/usr/bin/id $OWNER | /bin/awk '{print $1}'`
+        yourid=`/usr/bin/id | /bin/awk '{print $1}'`
+        if [ "$yourid" = "$myid" ]
+        then
+            $JAVA -DQF_${ID} -DLoggerName=QFlow_${ID} ${JAVA_OPTS} $DAEMON -I $QBDIR/flow/${ID}/Flow.json >> $LOGDIR/QFlow_${ID}.out 2>&1 &
+        else
+            echo "It can only be started by the owner: $OWNER"
+            exit 1
+        fi
     fi
     ;;
 
