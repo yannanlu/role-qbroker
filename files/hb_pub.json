@@ -1,0 +1,30 @@
+{ // ./QClient.sh -I hb.json
+  "Operation": "pub",
+  "Source":[
+    {
+      "Operation":"generate",
+      "ClassName":"org.qbroker.receiver.HeartbeatGenerator",
+      "URI":"hb://localhost",
+      "Monitor": [
+        {
+          "Name": "pub_test1",
+          "Limit": "0",
+          "TemplateFile": ""
+        }
+      ],
+      "DisplayMask": "0"
+    }
+  ],
+  "Target": [
+    {
+      "ClassName": "org.qbroker.persister.JMSPublisher",
+      "Capacity": "1024",
+      "ContextFactory": "com.sun.jndi.fscontext.RefFSContextFactory",
+      "URI": "file:///opt/qbroker/jndi",
+      "ConnectionFactoryName": "cn=TopicConnectionFactory",
+      "TopicName": "cn=MyTopic",
+      "Operation": "pub",
+      "DisplayMask": "6"
+    }
+  ]
+}

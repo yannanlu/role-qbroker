@@ -1,17 +1,17 @@
 ---
-- name: Get stats of security plugin
+- name: Get stats of security plugin for {{role_name}}
   stat:
     path: "/var/cache/ansible/{{qbroker_security_plugin}}"
     get_md5: no
     get_checksum: no
   register: st_qb_security_plugin
 
-- name: Get the security plugin via s3
+- name: Get the security plugin via s3 for {{role_name}}
   command: "aws s3 --region {{region|default('us-east-2')}} cp {{qbroker_repo_url}}/{{qbroker_security_plugin}} /var/cache/ansible/"
   when: not st_qb_security_plugin.stat.exists and qbroker_repo_url|regex_search('^s3:')
   register: st_security_plugin_qb1
 
-- name: Get the security plugin via http
+- name: Get the security plugin via http for {{role_name}}
   get_url:
     url: "{{qbroker_repo_url}}/{{qbroker_security_plugin}}"
     dest: /var/cache/ansible/
@@ -19,21 +19,20 @@
   when: not st_qb_security_plugin.stat.exists and not qbroker_repo_url|regex_search('^s3:')
   register: st_security_plugin_qb2
 
-- name: Get stats of security plugin
+- name: Get stats of security plugin for {{role_name}}
   stat:
     path: "{{qbroker_dir}}/lib/{{qbroker_security_plugin}}"
     get_md5: no
     get_checksum: no
   register: st_jar_security_plugin
 
-- name: Copy security plugin
+- name: Copy security plugin for {{role_name}}
   copy:
     src: "/var/cache/ansible/{{qbroker_security_plugin}}"
     dest: "{{qbroker_dir}}/lib/"
     remote_src: yes
-    force: no
     owner: "{{qbroker_user}}"
     group: "{{qbroker_group}}"
     mode: 0644
   when: st_security_plugin_qb1 is changed or st_security_plugin_qb2 is changed or not st_jar_security_plugin.stat.exists
-  notify: "Restart_{{my_service|default(role_name)}}"
+  notify: "Restart_{{role_name}}"

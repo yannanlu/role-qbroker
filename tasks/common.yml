@@ -35,6 +35,7 @@
   with_items:
     - agent
     - bin
+    - cfg
     - flow
     - lib
     - init.d/inactive
@@ -88,3 +89,14 @@
     java: "{{qbroker_java}}"
     dir: "{{qbroker_dir}}"
     jar_files: "{{qbroker_qclient_jars}}"
+
+- name: Copy shared json files
+  copy:
+    src: "{{item}}"
+    dest: "{{qbroker_dir}}/cfg/{{item}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+    mode: 0664
+  with_items:
+    - hb_pub.json
+    - hb_put.json

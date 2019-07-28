@@ -1,0 +1,32 @@
+{
+  "Name": "rpt_{{item}}",
+  "ClassName": "org.qbroker.monitor.ScriptLauncher",
+  "Site": "LITS",
+  "Type": "ScriptLauncher",
+  "Category": "REPORT",
+  "Description": "report on hostname",
+  "Step": "1",
+  "Tolerance": "0",
+  "MaxRetry": "2",
+  "MaxPage": "1",
+  "QuietPeriod": "12",
+  "ExceptionTolerance": "2",
+  "Script": "{{rpt_cmd|default('/bin/uname -n')}}",
+  "ScriptTimeout": "40",
+  "ReportMode": "final",
+  "DisableMode": "1",
+  "XPatternGroup": [
+    {
+      "Pattern": [
+        "^{{item}}\\.?"
+      ]
+    }
+  ],
+  "ActiveTime": {
+    "TimeWindow": [
+      {
+        "Interval": "00:00:00-24:00:00"
+      }
+    ]
+  }
+}

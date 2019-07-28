@@ -10,9 +10,10 @@ $QBDIR/lib/{{f}}:\
 $QBDIR/lib/:$CLASSPATH
 export CLASSPATH
 
-if [[ "$1" =~ ^-D ]]
+if [[ "$1" =~ ^-D ]] && [[ "$1" =~ = ]]
 then
   JAVA_OPTS="$1"
+  shift
 fi
 
 TZ=US/Eastern

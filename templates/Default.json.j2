@@ -1,0 +1,210 @@
+{
+  "Name": "Flow",
+  "Site": "LITS",
+  "Category": "{{id}}",
+  "Type": "QFlow",
+  "Operation": "move",
+  "Description": "a message flow",
+  "XAMode": "0",
+  "Capacity": "256",
+  "Mode": "daemon",
+  "LogDir": "{{log_dir}}",
+  "LogDatePattern": "'.'MM",
+  "ConfigDir": "{{qb_dir}}/flow/{{id}}",
+  "Heartbeat": "300",
+  "Debug": "5",
+  "FlowDebug": "37",
+  "EscalationCapacity": "64",
+  "MaxNumberFlow": "1",
+  "ConfigRepository": "repository_flow",
+  "OpenSSLPlugin": "org.qbroker.security.Decryptor",
+  "AdminServer": {
+    "ClassName": "org.qbroker.receiver.ServerReceiver",
+    "URI": "tcp://localhost:{{admin_port}}",
+    "Operation": "respond",
+    "Capacity": "64",
+    "Partition": "0,32",
+    "EOTBytes": "0x0a",
+    "TextMode": "1",
+    "Template": "##body##\n",
+    "Parser": {
+      "ClassName": "org.qbroker.event.EventParser"
+    },
+    "RestartScript": "/bin/bash -c \"/opt/qbroker/init.d/S50QFlow_{{id}} restart &\""
+  },
+  "Reporter": [
+{% for item in rpt_hosts %}
+    "rpt_{{item}}",
+{% endfor %}
+    "rpt_localhost"
+  ],
+  "Receiver": [
+    "rcvr_hb"
+  ],
+  "Persister": [
+    "pstr_null"
+  ],
+  "repository_flow": {
+    "Name": "repository_flow",
+    "ClassName": "org.qbroker.monitor.PropertyMonitor",
+    "Site": "LITS",
+    "Category": "WDAP",
+    "Description": "Web JSON Configuration Repository",
+    "Step": "1",
+    "Tolerance": "1",
+    "MaxRetry": "2",
+    "MaxPage": "2",
+    "QuietPeriod": "12",
+    "ExceptionTolerance": "2",
+{% if cfg_url|regex_search('^http') %}
+    "URI": "{{cfg_url}}/{{id}}/flow.json",
+    "Username": "{{cfg_user}}",
+    "EncryptedPassword": "{{encrypted_passwd}}",
+    "MaxBytes": "0",
+    "Pattern": "Last-[mM]odified: (\\w+, \\d+ \\w+ \\d+ \\d+:\\d+:\\d+\\.\\d+ \\w+)",
+    "DateFormat": "EE, dd MMM yyyy HH:mm:ss.SSS zz",
+    "Timeout": "60",
+    "IgnoredField": [
+      "LastModified"
+    ],
+{% else %}
+    "URI": "{{cfg_url}}/{{id}}/Flow.json",
+{% endif %}
+    "Basename": "Flow",
+    "IncludeGroup": {
+      "ConfigRepository": "",
+      "Flow": [
+        "Receiver",
+        "Node",
+        "Persister",
+        "Reporter"
+      ]
+    },
+    "PropertyFile": "{{qb_dir}}/flow/{{id}}/Flow.json",
+    "DependencyGroup": [
+      {
+        "Dependency": [
+          {
+            "Name": "repo_flow",
+{% if cfg_url|regex_search('^http') %}
+            "ClassName": "org.qbroker.monitor.URLMonitor",
+            "URI": "{{cfg_url}}/{{id}}/flow.json",
+            "Operation": "HEAD",
+            "Username": "{{cfg_user}}",
+            "EncryptedPassword": "{{encrypted_passwd}}",
+            "MaxBytes": "0",
+            "Pattern": "Last-[mM]odified: (\\w+, \\d+ \\w+ \\d+ \\d+:\\d+:\\d+ \\w+)",
+            "DateFormat": "EE, dd MMM yyyy HH:mm:ss zz",
+            "Timeout": "60",
+{% else %}
+            "ClassName": "org.qbroker.monitor.FileMonitor",
+            "URI": "{{cfg_url}}/{{id}}/Flow.json",
+{% endif %}
+            "TimeOffset": "0"
+          }
+        ]
+      }
+    ],
+    "ActiveTime": {
+      "TimeWindow": [
+        {
+          "Interval": "00:00:00-24:00:00"
+        }
+      ]
+    }
+  },
+{% for item in rpt_hosts %}
+  "rpt_{{item}}": {
+    "Name": "rpt_{{item}}",
+    "ClassName": "org.qbroker.monitor.ScriptLauncher",
+    "Site": "LITS",
+    "Type": "ScriptLauncher",
+    "Category": "REPORT",
+    "Description": "report on hostname",
+    "Step": "1",
+    "Tolerance": "0",
+    "MaxRetry": "2",
+    "MaxPage": "1",
+    "QuietPeriod": "12",
+    "ExceptionTolerance": "2",
+    "Script": "{{rpt_cmd|default('/bin/uname -n')}}",
+    "ScriptTimeout": "40",
+    "ReportMode": "final",
+    "DisableMode": "1",
+    "XPatternGroup": [
+      {
+        "Pattern": [
+          "^{{item}}\\.?"
+        ]
+      }
+    ],
+    "ActiveTime": {
+      "TimeWindow": [
+        {
+          "Interval": "00:00:00-24:00:00"
+        }
+      ]
+    }
+  },
+{% endfor %}
+  "rpt_localhost": {
+    "Name": "rpt_localhost",
+    "ClassName": "org.qbroker.monitor.ScriptLauncher",
+    "Site": "LITS",
+    "Type": "ScriptLauncher",
+    "Category": "REPORT",
+    "Description": "report on hostname",
+    "Step": "1",
+    "Tolerance": "0",
+    "MaxRetry": "2",
+    "MaxPage": "1",
+    "QuietPeriod": "12",
+    "ExceptionTolerance": "2",
+    "Script": "/bin/uname -n",
+    "ScriptTimeout": "40",
+    "ReportMode": "final",
+    "DisableMode": "1",
+    "XPatternGroup": [
+      {
+        "Pattern": [
+          "."
+        ]
+      }
+    ],
+    "ActiveTime": {
+      "TimeWindow": [
+        {
+          "Interval": "00:00:00-24:00:00"
+        }
+      ]
+    }
+  },
+  "rcvr_hb": {
+    "Name": "rcvr_hb",
+    "ClassName": "org.qbroker.receiver.HeartbeatGenerator",
+    "URI": "hb://localhost",
+    "Operation": "generate",
+    "LinkName": "root",
+    "Partition": "0,0",
+    "Heartbeat": "60",
+    "Mode": "deamon",
+    "TextMode": "1",
+    "XMode": "0",
+    "DisplayMask": "0",
+    "Monitor": [
+      {
+        "Name": "5min",
+        "Heartbeat": "300"
+      }
+    ]
+  },
+  "pstr_null": {
+    "Name": "pstr_null",
+    "ClassName": "org.qbroker.persister.LogPersister",
+    "URI": "log:///dev/null",
+    "Operation": "append",
+    "LinkName": "root",
+    "Template": "##site##\n",
+    "DisplayMask": "6"
+  }
+}

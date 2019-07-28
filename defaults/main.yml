@@ -3,7 +3,7 @@ qbroker_user: qbadm
 qbroker_group: qb
 qbroker_dir: /opt/qbroker
 qbroker_repo_url: s3://ylutest/qbroker
-qbroker_artifact: qbroker-1.2.2.jar
+qbroker_artifact: qbroker-1.2.4.jar
 qbroker_shared_lib: qblib-1.0.1.tgz
 qbroker_java: /usr/bin/java
 qbroker_java_opts: "-server -Dfile.encoding=UTF8 -Xmx256M"
@@ -11,12 +11,6 @@ qbroker_validate_certs: no
 qbroker_systemd_dir: "{{'/usr/lib/systemd' if ansible_distribution in ['RedHat','CentOS'] else '/lib/systemd'}}"
 qbroker_security_plugin:
 qbroker_logdir:
-qbroker_webapp_context:
-qbroker_service_id:
-
-qbroker_jar_files: []
-qbroker_json_files: []
-qbroker_jsp_files: []
 
 qbroker_qclient_jars:
   - activation-1.1.jar
@@ -33,11 +27,13 @@ qbroker_qclient_jars:
   - mfcontext-10.0.jar
   - mgmt_client-10.0.jar
   - mysql-connector-java-5.1.44-bin.jar
-  - ojdbc6.jar
+  - ojdbc7.jar
+  - postgresql-9.1-903.jdbc4.jar
   - providerutil.jar
   - rabbitmq-client.jar
   - sonic_Client-10.0.jar
   - sonic_Crypto-10.0.jar
+  - sonic_SSL-10.0.jar
   - sonic_XA-10.0.jar
   - sonic_mgmt_client-10.0.jar
   - "{{qbroker_artifact}}"

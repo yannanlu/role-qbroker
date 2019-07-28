@@ -1,0 +1,5 @@
+---
+- name: Remove {{item}} for {{qb_service}}
+  file:
+    path: "{{my_dir}}/{{item}}"
+    state: absent

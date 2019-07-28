@@ -6,6 +6,3 @@
 
 - include: log.yml
   when: qbroker_logdir != None
-
-- include: webapp.yml
-  when: qbroker_service_id != None and qbroker_webapp_context != None

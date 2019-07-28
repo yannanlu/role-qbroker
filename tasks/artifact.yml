@@ -1,37 +1,37 @@
 ---
-- name: Get stats of artifact
+- name: Get stats of artifact for {{role_name}}
   stat:
-    path: "/var/cache/ansible/{{qbroker_artifact}}"
+    path: "/var/cache/ansible/{{qb_artifact|default(qbroker_artifact)}}"
     get_md5: no
     get_checksum: no
   register: st_qb_jar
 
-- name: Get the artifact via s3
-  command: "aws s3 --region {{region|default('us-east-2')}} cp {{qbroker_repo_url}}/{{qbroker_artifact}} /var/cache/ansible/"
+- name: Get the artifact via s3 for {{role_name}}
+  command: "aws s3 --region {{region|default('us-east-2')}} cp {{qbroker_repo_url}}/{{qb_artifact|default(qbroker_artifact)}} /var/cache/ansible/"
   when: not st_qb_jar.stat.exists and qbroker_repo_url|regex_search('^s3:')
   register: new_jar_qb1
 
-- name: Get the artifact via http
+- name: Get the artifact via http for {{role_name}}
   get_url:
-    url: "{{qbroker_repo_url}}/{{qbroker_artifact}}"
+    url: "{{qbroker_repo_url}}/{{qb_artifact|default(qbroker_artifact)}}"
     dest: /var/cache/ansible/
     validate_certs: "{{qbroker_validate_certs}}"
   when: not st_qb_jar.stat.exists and not qbroker_repo_url|regex_search('^s3:')
   register: new_jar_qb2
 
-- name: Get stats of artifact
+- name: Get stats of artifact for {{role_name}}
   stat:
-    path: "{{qbroker_dir}}/lib/{{qbroker_artifact}}"
+    path: "{{qbroker_dir}}/lib/{{qb_artifact|default(qbroker_artifact)}}"
     get_md5: no
     get_checksum: no
   register: st_qbroker_jar
 
-- name: Copy artifact
+- name: Copy artifact for {{role_name}}
   copy:
-    src: "/var/cache/ansible/{{qbroker_artifact}}"
+    src: "/var/cache/ansible/{{qb_artifact|default(qbroker_artifact)}}"
     dest: "{{qbroker_dir}}/lib"
     remote_src: yes
     owner: "{{qbroker_user}}"
     group: "{{qbroker_group}}"
   when: new_jar_qb1 is changed or new_jar_qb2 is changed or not st_qbroker_jar.stat.exists
-  notify: "Restart_{{my_service|default(role_name)}}"
+  notify: "Restart_{{role_name}}"

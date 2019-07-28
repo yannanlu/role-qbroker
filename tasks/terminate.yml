@@ -1,0 +1,55 @@
+---
+- name: Get stats of monit for {{qb_service}}
+  stat:
+    path: "{{monit_includedir}}/{{qb_service}}.monit"
+    get_md5: no
+    get_checksum: no
+  register: st_monit
+
+- name: Remove monit file for {{qb_service}}
+  file:
+    path: "{{monit_includedir}}/{{qb_service}}.monit"
+    state: absent
+  when: st_monit.stat.exists
+  register: monit_st
+
+- name: Restart monit for {{qb_service}}
+  systemd:
+    name: monit
+    state: restarted
+  when: monit_st is changed
+
+- name: Get stats of service for {{qb_service}}
+  stat:
+    path: "{{qbroker_systemd_dir}}/system/{{qb_service}}.service"
+    get_md5: no
+    get_checksum: no
+  register: st_systemd
+
+- name: Disable systemd unit for {{qb_service}}
+  systemd:
+    name: "{{qb_service}}.service"
+    enabled: no
+    state: stopped
+  failed_when: False
+
+- name: Remove systemd unit for {{qb_service}}
+  file:
+    path: "{{qbroker_systemd_dir}}/system/{{qb_service}}.service"
+    state: absent
+  when: st_systemd.stat.exists
+  register: rm_unit
+
+- name: Reload systemd daemon for {{qb_service}}
+  systemd:
+    name: "{{qb_service}}.service"
+    daemon_reload: yes
+  when: rm_unit is changed
+
+- name: Reset systemd failed units for {{qb_service}}
+  command: "/usr/bin/systemctl reset-failed"
+  when: rm_unit is changed
+
+- include: "roles/{{qb_service}}/tasks/cleanup.yml"
+  vars:
+    my_host: "{{my_hostname}}"

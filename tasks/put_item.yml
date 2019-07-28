@@ -1,0 +1,25 @@
+---
+- name: Set output
+  set_fact:
+    text: "put {{msg_count}} msgs to cn={{mq_queue}}"
+    log: "{{mq_ops}} a msg to cn="
+
+- name: Display put item 
+  debug:
+    msg: "Putting {{msg_count}} msgs of {{item}} to {{mq_queue}} of {{qb_service}}"
+
+- name: Put a batch of msgs to the flow
+  command: "{{qbroker_dir}}/bin/QClient.sh -I {{qbroker_dir}}/cfg/hb_put.json -F {{mq_icf}} -U {{mq_url}} -o cn={{mq_queue}} -C cn={{mq_qcf}} -H {{mq_user}} -M '{{mq_passwd}}' -Q {{mq_user}} -R '{{mq_passwd}}' -p flow -v {{qb_service}} -u hb://{{qbroker_dir}}/templates/{{item}} -J {{msg_persistence}} -n {{msg_count}}"
+  register: put_result
+  changed_when: False
+
+- name: Tail the log file
+  command: "/usr/bin/tail -n 15 {{qb_logdir}}/QFlow_{{qb_service_id}}.log"
+  register: tail_result
+  changed_when: False
+
+- name: Check both output of put and log file
+  assert:
+    that:
+      - "text in put_result.stdout"
+      - "log in tail_result.stdout"

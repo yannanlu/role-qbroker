@@ -1,7 +1,7 @@
 ---
-- name: Create sub dirs for the web service
+- name: Create sub dirs for the web service of {{role_name}}
   file:
-    path: "{{qbroker_dir}}/{{item}}/{{qbroker_service_id}}"
+    path: "{{qbroker_dir}}/{{item}}/{{service_id}}"
     state: directory
     owner: "{{tomcat_user}}"
     group: "{{tomcat_group}}"
@@ -12,70 +12,138 @@
 
 - include: artifact.yml
   vars:
-    my_service: tomcat.service
+    qb_artifact: "{{my_artifact}}"
 
 - include: security_plugin.yml
-  vars:
-    my_service: tomcat.service
   when: qbroker_security_plugin != None
 
-- name: Template of context.xml
-  template:
-    src: context.xml.j2
-    dest: "{{tomcat_dir}}/Catalina/localhost/{{qbroker_webapp_context}}.xml"
-    owner: root
-    group: "{{tomcat_group}}"
-    mode: 0644
-  vars:
-    path: "{{qbroker_webapp_context}}"
-    context: "{{qbroker_webapp_context}}"
-    qb_dir: "{{qbroker_dir}}"
-  notify: Restart_tomcat.service
-
-- name: Create dir of webservice/WEB-INF/lib
+- name: Create sub dirs for the web service of {{role_name}}
   file:
-    path: "{{qbroker_dir}}/{{qbroker_webapp_context}}/WEB-INF/lib"
+    path: "{{qbroker_dir}}/{{role_name}}/{{item}}"
     state: directory
     owner: "{{tomcat_user}}"
     group: "{{tomcat_group}}"
     mode: 0755
+  with_items:
+    - logs
+    - temp
+    - work
+    - "webapps/{{webapp_context}}/WEB-INF/lib"
 
-- name: Copy web.xml
-  copy:
-    src: "../../{{qbroker_webapp_context}}/files/web.xml"
-    dest: "{{qbroker_dir}}/{{qbroker_webapp_context}}/WEB-INF/"
+- name: Get stats of conf for {{role_name}}
+  stat:
+    path: "{{qbroker_dir}}/{{role_name}}/conf"
+    get_md5: no
+    get_checksum: no
+  register: st_qb_conf
+
+- name: Copy tomcat conf dir for {{role_name}}
+  command: "cp -rp {{tomcat_basedir}}/conf {{qbroker_dir}}/{{role_name}}/"
+  when: not st_qb_conf.stat.exists
+
+- name: Template of server.xml for {{role_name}}
+  template:
+    src: ../../tomcat/templates/server.xml.j2
+    dest: "{{qbroker_dir}}/{{role_name}}/conf/server.xml"
+    owner: "{{tomcat_user}}"
+    group: "{{tomcat_group}}"
+    mode: 0640
+  vars:
+    port: "{{tomcat_port}}"
+    ajp_port: "{{tomcat_ajp_port}}"
+    redirect_port: "{{tomcat_redirect_port}}"
+    shutdown_port: "{{tomcat_shutdown_port}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Template of web.xml for {{role_name}}
+  template:
+    src: ../../tomcat/templates/web.xml.j2
+    dest: "{{qbroker_dir}}/{{role_name}}/conf/web.xml"
     owner: "{{tomcat_user}}"
     group: "{{tomcat_group}}"
     mode: 0644
-  notify: Restart_tomcat.service
+  vars:
+    is_readonly: "{{my_is_readonly|default(tomcat_is_readonly)}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Copy web.xml of webapp for {{role_name}}
+  copy:
+    src: web.xml
+    dest: "{{qbroker_dir}}/{{role_name}}/webapps/{{webapp_context}}/WEB-INF/"
+    owner: "{{tomcat_user}}"
+    group: "{{tomcat_group}}"
+    mode: 0644
+  notify: "Restart_{{role_name}}"
 
 - name: Copy jsp files
   copy:
-    src: "../../{{qbroker_webapp_context}}/files/jsp/{{item}}"
-    dest: "{{qbroker_dir}}/{{qbroker_webapp_context}}/"
+    src: "jsp/{{item}}"
+    dest: "{{qbroker_dir}}/{{role_name}}/webapps/{{webapp_context}}/"
     owner: "{{tomcat_user}}"
     group: "{{tomcat_group}}"
     mode: 0644
-  with_items: "{{qbroker_jsp_files}}"
+  with_items: "{{my_jsp_files}}"
 
 - name: Copy json files
   copy:
-    src: "../../{{qbroker_webapp_context}}/files/flow/{{item}}"
-    dest: "{{qbroker_dir}}/flow/{{qbroker_service_id}}/"
+    src: "flow/{{item}}"
+    dest: "{{qbroker_dir}}/flow/{{service_id}}/"
     owner: "{{tomcat_user}}"
     group: "{{tomcat_group}}"
     mode: 0644
-  with_items: "{{qbroker_json_files}}"
-  notify: Restart_tomcat.service
+  with_items: "{{my_json_files}}"
+  notify: "Restart_{{role_name}}"
 
 - name: Copy jar files
   copy:
     src: "{{qbroker_dir}}/lib/{{item}}"
-    dest: "{{qbroker_dir}}/{{qbroker_webapp_context}}/WEB-INF/lib/"
+    dest: "{{qbroker_dir}}/{{role_name}}/webapps/{{webapp_context}}/WEB-INF/lib/"
     remote_src: yes
-    force: no
     owner: "{{tomcat_user}}"
     group: "{{tomcat_group}}"
     mode: 0644
-  with_items: "{{qbroker_jar_files}}"
-  notify: Restart_tomcat.service
+  with_items: "{{my_jar_files}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Template of webapp.service for {{role_name}}
+  template:
+    src: ../../qbroker/templates/webapp.service.j2
+    dest: "{{qbroker_systemd_dir}}/system/{{role_name}}.service"
+    mode: 0644
+  vars:
+    id: "{{service_id}}"
+    home_dir: "{{tomcat_basedir}}"
+    base_dir: "{{qbroker_dir}}/{{role_name}}"
+    jvm_home: "{{my_java_home|default(java_home)}}"
+    java_opts: "{{my_java_opts|default(qbroker_java_opts)}}"
+    user: "{{tomcat_user}}"
+    group: "{{tomcat_group}}"
+  register: qb_tomcat_script
+  notify: "Restart_{{role_name}}"
+
+- name: Get stats of monitrc for {{role_name}}
+  stat:
+    path: "{{monit_dir}}/monitrc"
+    get_md5: no
+    get_checksum: no
+  register: st_monitrc
+
+- name: Template of webapp.monit for {{role_name}}
+  template:
+    src: ../../qbroker/templates/webapp.monit.j2
+    dest: "{{monit_includedir}}/{{role_name}}.monit"
+    mode: 0644
+  vars:
+    service: "{{role_name}}"
+    port: "{{tomcat_port}}"
+    base_dir: "{{qbroker_dir}}/{{role_name}}"
+  when: st_monitrc.stat.exists
+  notify: Restart_monit.service
+
+- name: Enable the service for {{role_name}}
+  systemd:
+    name: "{{role_name}}"
+    daemon_reload: yes
+    enabled: yes
+  when: qb_tomcat_script is changed
+  failed_when: False
