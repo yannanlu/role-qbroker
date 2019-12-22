@@ -53,6 +53,7 @@
     ajp_port: "{{tomcat_ajp_port}}"
     redirect_port: "{{tomcat_redirect_port}}"
     shutdown_port: "{{tomcat_shutdown_port}}"
+    auth_enabled: "{{tomcat_auth_enabled}}"
   notify: "Restart_{{role_name}}"
 
 - name: Template of web.xml for {{role_name}}

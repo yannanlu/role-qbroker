@@ -19,18 +19,16 @@
   "ConfigRepository": "repository_flow",
   "OpenSSLPlugin": "org.qbroker.security.Decryptor",
   "AdminServer": {
-    "ClassName": "org.qbroker.receiver.ServerReceiver",
-    "URI": "tcp://localhost:{{admin_port}}",
-    "Operation": "respond",
+    "Name": "admin",
+    "ClassName": "org.qbroker.net.SimpleHttpServer",
+    "URI": "https://localhost:{{admin_port}}/admin/jms",
+    "Operation": "handle",
     "Capacity": "64",
     "Partition": "0,32",
-    "EOTBytes": "0x0a",
-    "TextMode": "1",
-    "Template": "##body##\n",
-    "Parser": {
-      "ClassName": "org.qbroker.event.EventParser"
-    },
-    "RestartScript": "/bin/bash -c \"/opt/qbroker/init.d/S50QFlow_{{id}} restart &\""
+    "Timeout": "10",
+    "KeyStoreFile": "{{qb_dir}}/cfg/star_cc_emory_edu.jks",
+    "EncryptedKeyStorePassword": "{{encrypted_ks_passwd}}",
+    "RestartScript": "/bin/bash -c \"{{qb_dir}}/init.d/S50QFlow_{{id}} restart &\""
   },
   "Reporter": [
 {% for item in rpt_hosts %}

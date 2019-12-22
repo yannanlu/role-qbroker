@@ -90,7 +90,7 @@
     dir: "{{qbroker_dir}}"
     jar_files: "{{qbroker_qclient_jars}}"
 
-- name: Copy shared json files
+- name: Copy shared files
   copy:
     src: "{{item}}"
     dest: "{{qbroker_dir}}/cfg/{{item}}"
@@ -100,3 +100,5 @@
   with_items:
     - hb_pub.json
     - hb_put.json
+    - unsub.json
+    - selfsigned.jks

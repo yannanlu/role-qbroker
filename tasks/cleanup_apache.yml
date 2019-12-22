@@ -1,0 +1,55 @@
+---
+- name: Set vars
+  set_fact:
+    tomcat_bind_ip: 127.0.0.1
+    tomcat_port: 8080
+    tomcat_ajp_port: 8009
+    activemq_admin_location: []
+
+- name: Include default vars of apache for {{qb_service}}
+  include_vars:
+    file: ../../apache/defaults/main.yml
+    name: that
+
+- name: Include vars of {{qb_service}}
+  include_vars:
+    file: "../../{{qb_service}}/vars/main.yml"
+    name: this
+
+- name: Get stats of apache config file for {{qb_service}}
+  stat:
+    path: "{{that.apache_site_dir}}/{{this.apache_server_name|default('000-default', true)}}.conf"
+    get_md5: no
+    get_checksum: no
+  register: st_apache
+
+- name: Remove apache config file for {{qb_service}}
+  file:
+    path: "{{that.apache_site_dir}}/{{this.apache_server_name|default('000-default', true)}}.conf"
+    state: absent
+  when: st_apache.stat.exists and this.apache_server_name|length > 0
+  register: apache_st
+
+- name: Template of default.conf.j2
+  template:
+    src: ../../apache/templates/default.conf.j2
+    dest: "{{that.apache_site_dir}}/000-default.conf"
+    mode: 0644
+  vars:
+    server_name: ''
+    locations: []
+    conf_dir: "{{that.apache_dir}}"
+    mods_dir: "{{that.apache_modsdir}}"
+    protected_location: []
+    passwd_file: "{{that.apache_passwd_file}}"
+    ldap_url: "{{that.apache_ldap_url}}"
+    ldap_user: "{{that.apache_ldap_user}}"
+    ldap_passwd: "{{that.apache_ldap_passwd|replace('\n', '')}}"
+  when: this.apache_server_name == ''
+  register: apache_st1
+
+- name: Restart apache for {{qb_service}}
+  systemd:
+    name: "{{that.apache_pkg_name}}"
+    state: restarted
+  when: apache_st is changed or apache_st1 is changed

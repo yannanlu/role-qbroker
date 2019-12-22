@@ -19,6 +19,9 @@
     state: restarted
   when: monit_st is changed
 
+- include: "cleanup_{{web_frontend}}.yml"
+  when: web_frontend is defined and web_frontend|length > 0
+
 - name: Get stats of service for {{qb_service}}
   stat:
     path: "{{qbroker_systemd_dir}}/system/{{qb_service}}.service"
@@ -49,6 +52,10 @@
 - name: Reset systemd failed units for {{qb_service}}
   command: "/usr/bin/systemctl reset-failed"
   when: rm_unit is changed
+
+- name: Set my_hostname as a hack for {{qb_service}}
+  set_fact:
+    my_hostname: "{{ansible_host}}"
 
 - include: "roles/{{qb_service}}/tasks/cleanup.yml"
   vars:

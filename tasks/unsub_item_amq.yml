@@ -1,0 +1,15 @@
+---
+- name: Unsubscribe item
+  command: "{{qbroker_dir}}/bin/QClient.sh -I {{qbroker_dir}}/cfg/unsub.json -f {{mq_icf}} -u {{mq_url}} -t cn={{mq_topic}} -c cn={{mq_tcf}} -h {{mq_user}} -m '{{mq_passwd}}' -q {{mq_user}} -w '{{mq_passwd}}' -j {{item}} -k {{item}}"
+  register: unsub_result
+  failed_when: False
+
+- name: Display unsubscribe item
+  debug:
+    msg: "Durable subscription of {{item}} unsubscribed for {{qb_service}}"
+  when: unsub_result.stdout|length == 0
+
+- name: Display failure
+  debug:
+    msg: "Failed to unsubscribe {{item}}: {{unsub_result.stdout}}"
+  when: unsub_result.stdout|length > 0

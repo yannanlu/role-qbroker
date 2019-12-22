@@ -2,14 +2,14 @@
 - name: Set output
   set_fact:
     text: "pub {{msg_count}} msgs to cn={{mq_topic}}"
-    log: "{{mq_ops}} a msg to cn="
+    log: "{{pattern}}"
 
 - name: Display pub item
   debug:
     msg: "Publishing {{msg_count}} msgs of {{item}} to {{mq_topic}} of {{qb_service}}"
 
 - name: Pub a batch of msgs to item
-  command: "{{qbroker_dir}}/bin/QClient.sh -I {{qbroker_dir}}/cfg/hb_pub.json -F {{mq_icf}} -U {{mq_url}} -T cn={{mq_topic}} -C cn={{mq_tcf}} -H {{mq_user}} -M '{{mq_passwd}}' -Q {{mq_user}} -R '{{mq_passwd}}' -p flow -v {{qb_service}} -u hb://{{qbroker_dir}}/templates/{{item}} -J {{msg_persistence}} -n {{msg_count}}"
+  command: "{{qbroker_dir}}/bin/QClient.sh -I {{qbroker_dir}}/cfg/hb_pub.json -F {{mq_icf}} -U {{mq_url}} -T cn={{mq_topic}} -C cn={{mq_tcf}} -H {{mq_user}} -M '{{mq_passwd}}' -Q {{mq_user}} -R '{{mq_passwd}}' -p flow -v {{qb_service}} -u hb://{{qbroker_dir}}/cfg/{{item}} -J {{msg_persistence}} -n {{msg_count}}"
   register: pub_result
   changed_when: False
 
@@ -18,7 +18,7 @@
   register: tail_result
   changed_when: False
 
-- name: Check both output of put and log file
+- name: Check both output of pub and log file
   assert:
     that:
       - "text in pub_result.stdout"

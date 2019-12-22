@@ -1,0 +1,17 @@
+{
+  "Operation": "DeregSub",
+  "Source": [
+    {
+      "ClassName": "org.qbroker.receiver.JMSSubscriber",
+      "ContextFactory": "com.sun.jndi.fscontext.RefFSContextFactory",
+      "URI": "file:///opt/qbroker/jndi",
+      "ConnectionFactoryName": "cn=YLUTCF",
+      "TopicName": "cn=YluTopic",
+      "Username": "YluTest",
+      "Password": "xxxx",
+      "DisplayMask": "0",
+      "SubscriptionID": "PubSubConsumer",
+      "Operation": "DeregSub"
+    }
+  ]
+}
