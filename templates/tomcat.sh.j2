@@ -1,0 +1,115 @@
+#!/bin/bash
+
+DAEMON={{service}}
+OWNER={{qb_user}}
+JAVA={{java}}
+JAVA_OPTS="{{java_opts}}"
+CATALINA_HOME={{home_dir}}
+CATALINA_BASE={{qb_dir}}/{{service}}
+CATALINA_PIDFILE=${CATALINA_BASE}/temp/tomcat.pid
+
+export TZ=US/Eastern
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{{qb_dir}}/lib
+
+## get pids for daemon processes with string patterns
+getDaemonprocs() {
+case $# in
+1)
+    ## get the line with the pattern and without "grep"
+    pids=`/bin/ps auxwww | /bin/grep catalina.base |
+         /bin/grep java | /bin/grep "D\\[$1\\] " |
+         /usr/bin/awk '($NF == "start") {
+         if ($(NF-1) != "/bin/grep") print $2
+         }' ORS=' '`
+    ;;
+2)
+    ## get the line with the pattern and ending with the 2nd pattern
+    pids=`/bin/ps auxwww | /bin/grep catalina.base |
+         /bin/grep $1 |
+         /usr/bin/awk '{
+         if ($(NF-2) == CMD) print $2
+         }' ORS=' ' CMD=$2`
+    ;;
+*)
+    return 1
+    ;;
+esac
+
+    if [ "$pids" != "" ]
+    then
+         echo $pids
+         return 0
+    fi
+    return 1
+}
+
+case "$1" in
+'start')
+    PIDS=`getDaemonprocs ${DAEMON}`
+    if [ "$PIDS" != "" ]
+    then
+        echo "${DAEMON} (pid $PIDS) is already running."
+        exit 0
+    elif [ ! -d ${CATALINA_BASE} ]
+    then
+        echo "${CATALINA_BASE} is not found."
+        exit 1
+    fi
+
+    cd ${CATALINA_BASE}
+    myid=`/usr/bin/id $OWNER | /bin/awk '{print $1}'`
+    yourid=`/usr/bin/id | /bin/awk '{print $1}'`
+    if [ "$yourid" = "$myid" ]
+    then
+        $JAVA -D[$DAEMON] -classpath ${CATALINA_HOME}/bin/bootstrap.jar:${CATALINA_HOME}/bin/tomcat-juli.jar:${CATALINA_HOME}/bin/commons-daemon.jar ${JAVA_OPTS} -Djava.awt.headless=true -Dcatalina.home=${CATALINA_HOME} -Djava.endorsed.dirs= -Djava.io.tmpdir=${CATALINA_BASE}/temp -Djava.util.logging.config.file=${CATALINA_BASE}/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Dcatalina.base=${CATALINA_BASE} org.apache.catalina.startup.Bootstrap start >> ${CATALINA_BASE}/logs/catalina.out 2>&1 &
+    else
+        echo "It can only be started by the owner: $OWNER"
+        exit 1
+    fi
+    ;;
+ 
+'stop')
+    cd ${CATALINA_BASE}
+#    $JAVA -D[$DAEMON] -classpath ${CATALINA_HOME}/bin/bootstrap.jar:${CATALINA_HOME}/bin/tomcat-juli.jar:${CATALINA_HOME}/bin/commons-daemon.jar ${JAVA_OPTS} -Djava.awt.headless=true -Dcatalina.base=${CATALINA_BASE} -Dcatalina.home=${CATALINA_HOME} -Djava.endorsed.dirs= -Djava.io.tmpdir=${CATALINA_BASE}/temp -Djava.util.logging.config.file=${CATALINA_BASE}/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager org.apache.catalina.startup.Bootstrap stop
+    PIDS=`getDaemonprocs ${DAEMON}`
+    if [ "$PIDS" != "" ]
+    then
+        /bin/kill $PIDS
+        /bin/sleep 2
+    fi
+
+    # wait for up to 30 * 3 = 90 sec
+    for retry in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30
+    do
+        PIDS=`getDaemonprocs ${DAEMON}`
+        test "$PIDS" = "" && exit
+        /bin/sleep 3
+    done
+
+    /bin/kill $PIDS
+    /bin/sleep 2
+    PIDS=`getDaemonprocs ${DAEMON}`
+    test "$PIDS" = "" && exit
+    echo "${DAEMON} is still running, so kill it."
+    /bin/kill -9 $PIDS
+    ;;
+
+'restart')
+    $0 stop
+    sleep 2
+    $0 start
+    ;;
+
+'status')
+    PIDS=`getDaemonprocs ${DAEMON}`
+    if [ "$PIDS" != "" ]
+    then
+        echo "${DAEMON} (pid $PIDS) is running."
+    else
+        echo "${DAEMON} is stopped."
+    fi
+    ;;
+*)
+    echo "Usage: $0 { start | stop | restart | status }"
+    ;;
+esac

@@ -1,5 +1,5 @@
 check process {{service}}
-    matching "Dcatalina.base={{base_dir}} "
+    matching "Dcatalina.base={{base_dir}} org.apache.catalina.startup"
     start program = "/usr/bin/systemctl start {{service}}" with timeout 60 seconds
     stop program = "/usr/bin/systemctl stop {{service}}" with timeout 60 seconds
     if does not exist 5 cycles then restart

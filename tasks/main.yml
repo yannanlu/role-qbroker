@@ -1,8 +1,8 @@
 ---
 - include: common.yml
 
-- include: extra_jar.yml
-  when: qbroker_extra_jar is defined
+- include: extra_jars.yml
+  with_items: "{{qbroker_extra_jars}}"
 
 - include: log.yml
   when: qbroker_logdir != None

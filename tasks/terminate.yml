@@ -50,7 +50,7 @@
   when: rm_unit is changed
 
 - name: Reset systemd failed units for {{qb_service}}
-  command: "/usr/bin/systemctl reset-failed"
+  command: "{{qbroker_systemctl_cmd}} reset-failed"
   when: rm_unit is changed
 
 - name: Set my_hostname as a hack for {{qb_service}}

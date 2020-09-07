@@ -38,7 +38,6 @@
     - cfg
     - flow
     - lib
-    - init.d/inactive
     - jndi
     - templates
 
@@ -62,9 +61,9 @@
   when: not st_qb_tarball.stat.exists and not qbroker_repo_url|regex_search('^s3:')
   register: new_archive_qb2
 
-- name: Get stats of /opt/qbroker/lib
+- name: Get stats of /opt/qbroker/lib/providerutil.jar
   stat:
-    path: "{{qbroker_dir}}/lib"
+    path: "{{qbroker_dir}}/lib/providerutil.jar"
     get_md5: no
     get_checksum: no
   register: st_qbroker_lib

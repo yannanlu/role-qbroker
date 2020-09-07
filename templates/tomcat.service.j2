@@ -1,0 +1,11 @@
+[Unit]
+Description=QBroker WebApp of {{service}} with Tomcat 8.5
+After=syslog.target network.target
+[Service]
+Type=forking
+ExecStart={{qb_dir}}/bin/{{service}}.sh start
+ExecStop={{qb_dir}}/bin/{{service}}.sh stop
+User={{qb_user}}
+Group={{qb_group}}
+[Install]
+WantedBy=multi-user.target

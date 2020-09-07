@@ -5,10 +5,12 @@ qbroker_dir: /opt/qbroker
 qbroker_repo_url: s3://ylutest/qbroker
 qbroker_artifact: qbroker-1.2.4.jar
 qbroker_shared_lib: qblib-1.0.1.tgz
+qbroker_extra_jars: []
 qbroker_java: /usr/bin/java
-qbroker_java_opts: "-server -Dfile.encoding=UTF8 -Xmx256M"
+qbroker_java_opts: "-server -Xms128M -Xmx256M -Dfile.encoding=UTF8"
 qbroker_validate_certs: no
 qbroker_systemd_dir: "{{'/usr/lib/systemd' if ansible_distribution in ['RedHat','CentOS'] else '/lib/systemd'}}"
+qbroker_systemctl_cmd: "{{'/usr/bin/systemctl' if ansible_distribution in ['RedHat','CentOS'] else '/bin/systemctl'}}"
 qbroker_security_plugin:
 qbroker_logdir:
 

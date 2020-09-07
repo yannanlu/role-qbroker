@@ -1,10 +1,16 @@
 ---
+- name: Add user to the group of tomcat
+  user:
+    name: "{{qbroker_user}}"
+    groups: "{{tomcat_group}}"
+    append: yes
+
 - name: Create sub dirs for the web service of {{role_name}}
   file:
     path: "{{qbroker_dir}}/{{item}}/{{service_id}}"
     state: directory
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0755
   with_items:
     - flow
@@ -21,8 +27,8 @@
   file:
     path: "{{qbroker_dir}}/{{role_name}}/{{item}}"
     state: directory
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0755
   with_items:
     - logs
@@ -38,15 +44,23 @@
   register: st_qb_conf
 
 - name: Copy tomcat conf dir for {{role_name}}
-  command: "cp -rp {{tomcat_basedir}}/conf {{qbroker_dir}}/{{role_name}}/"
+  command: "cp -rp {{tomcat_dir}}/conf {{qbroker_dir}}/{{role_name}}/"
   when: not st_qb_conf.stat.exists
+
+- name: reset ownership on conf for {{role_name}}
+  file:
+    dest: "{{qbroker_dir}}/{{role_name}}/conf"
+    recurse: yes
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+  changed_when: False
 
 - name: Template of server.xml for {{role_name}}
   template:
     src: ../../tomcat/templates/server.xml.j2
     dest: "{{qbroker_dir}}/{{role_name}}/conf/server.xml"
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0640
   vars:
     port: "{{tomcat_port}}"
@@ -60,8 +74,8 @@
   template:
     src: ../../tomcat/templates/web.xml.j2
     dest: "{{qbroker_dir}}/{{role_name}}/conf/web.xml"
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0644
   vars:
     is_readonly: "{{my_is_readonly|default(tomcat_is_readonly)}}"
@@ -71,8 +85,8 @@
   copy:
     src: web.xml
     dest: "{{qbroker_dir}}/{{role_name}}/webapps/{{webapp_context}}/WEB-INF/"
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0644
   notify: "Restart_{{role_name}}"
 
@@ -80,8 +94,8 @@
   copy:
     src: "jsp/{{item}}"
     dest: "{{qbroker_dir}}/{{role_name}}/webapps/{{webapp_context}}/"
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0644
   with_items: "{{my_jsp_files}}"
 
@@ -89,8 +103,8 @@
   copy:
     src: "flow/{{item}}"
     dest: "{{qbroker_dir}}/flow/{{service_id}}/"
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0644
   with_items: "{{my_json_files}}"
   notify: "Restart_{{role_name}}"
@@ -100,25 +114,38 @@
     src: "{{qbroker_dir}}/lib/{{item}}"
     dest: "{{qbroker_dir}}/{{role_name}}/webapps/{{webapp_context}}/WEB-INF/lib/"
     remote_src: yes
-    owner: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
     mode: 0644
   with_items: "{{my_jar_files}}"
   notify: "Restart_{{role_name}}"
 
-- name: Template of webapp.service for {{role_name}}
+- name: Template of {{role_name}}.sh
   template:
-    src: ../../qbroker/templates/webapp.service.j2
+    src: ../../qbroker/templates/tomcat.sh.j2
+    dest: "{{qbroker_dir}}/bin/{{role_name}}.sh"
+    owner: "{{qbroker_user}}"
+    group: "{{qbroker_group}}"
+    mode: 0775
+  vars:
+    service: "{{role_name}}"
+    home_dir: "{{tomcat_dir}}"
+    qb_dir: "{{qbroker_dir}}"
+    qb_user: "{{qbroker_user}}"
+    java: "{{my_java|default(qbroker_java)}}"
+    java_opts: "{{tomcat_java_opts}} {{my_java_opts|default(qbroker_java_opts)}}"
+  notify: "Restart_{{role_name}}"
+
+- name: Template of {{role_name}}.service
+  template:
+    src: ../../qbroker/templates/tomcat.service.j2
     dest: "{{qbroker_systemd_dir}}/system/{{role_name}}.service"
     mode: 0644
   vars:
-    id: "{{service_id}}"
-    home_dir: "{{tomcat_basedir}}"
-    base_dir: "{{qbroker_dir}}/{{role_name}}"
-    jvm_home: "{{my_java_home|default(java_home)}}"
-    java_opts: "{{my_java_opts|default(qbroker_java_opts)}}"
-    user: "{{tomcat_user}}"
-    group: "{{tomcat_group}}"
+    service: "{{role_name}}"
+    qb_dir: "{{qbroker_dir}}"
+    qb_user: "{{qbroker_user}}"
+    qb_group: "{{qbroker_group}}"
   register: qb_tomcat_script
   notify: "Restart_{{role_name}}"
 
@@ -129,9 +156,9 @@
     get_checksum: no
   register: st_monitrc
 
-- name: Template of webapp.monit for {{role_name}}
+- name: Template of {{role_name}}.monit
   template:
-    src: ../../qbroker/templates/webapp.monit.j2
+    src: ../../qbroker/templates/tomcat.monit.j2
     dest: "{{monit_includedir}}/{{role_name}}.monit"
     mode: 0644
   vars:

@@ -1,50 +1,17 @@
 ---
-- name: Set vars
-  set_fact:
-    tomcat_bind_ip: 127.0.0.1
-    tomcat_port: 8080
-    activemq_admin_location: []
-
 - name: Include default vars of nginx for {{qb_service}}
   include_vars:
     file: ../../nginx/defaults/main.yml
-    name: that
-
-- name: Include vars of {{qb_service}}
-  include_vars:
-    file: "../../{{qb_service}}/vars/main.yml"
-    name: this
-
-- name: Get stats of nginx config file for {{qb_service}}
-  stat:
-    path: "{{that.nginx_dir}}/conf.d/{{this.nginx_server_name|default('default', true)}}.conf"
-    get_md5: no
-    get_checksum: no
-  register: st_nginx
+    name: my_nginx_defaults
 
 - name: Remove nginx config file for {{qb_service}}
   file:
-    path: "{{that.nginx_dir}}/conf.d/{{this.nginx_server_name|default('default', true)}}.conf"
+    path: "{{my_nginx_defaults.nginx_dir}}/conf.d/{{qb_service}}.conf"
     state: absent
-  when: st_nginx.stat.exists and this.nginx_server_name|length > 0
   register: nginx_st
-
-- name: Template of default.conf
-  template:
-    src: ../../nginx/templates/default.conf.j2
-    dest: "{{that.nginx_dir}}/conf.d/default.conf"
-    mode: 0644
-  vars:
-    server_name: ''
-    cfgdir: "{{that.nginx_dir}}"
-    logdir: "{{that.nginx_logdir}}"
-    locations: []
-    redirect_locations: []
-  when: this.nginx_server_name == ''
-  register: nginx_st1
 
 - name: Restart nginx for {{qb_service}}
   systemd:
     name: nginx
     state: restarted
-  when: nginx_st is changed or nginx_st1 is changed
+  when: nginx_st is changed

@@ -1,6 +1,6 @@
 {
   "Name": "Flow",
-  "Site": "LITS",
+  "Site": "DEVOPS",
   "Category": "{{id}}",
   "Type": "QFlow",
   "Operation": "move",
@@ -26,9 +26,9 @@
     "Capacity": "64",
     "Partition": "0,32",
     "Timeout": "10",
-    "KeyStoreFile": "{{qb_dir}}/cfg/star_cc_emory_edu.jks",
+    "KeyStoreFile": "{{qb_dir}}/cfg/selfsigned.jks",
     "EncryptedKeyStorePassword": "{{encrypted_ks_passwd}}",
-    "RestartScript": "/bin/bash -c \"{{qb_dir}}/init.d/S50QFlow_{{id}} restart &\""
+    "RestartScript": "/bin/bash -c \"{{qb_dir}}/bin/QFlow_{{id}}.sh restart &\""
   },
   "Reporter": [
 {% for item in rpt_hosts %}
@@ -45,9 +45,9 @@
   "repository_flow": {
     "Name": "repository_flow",
     "ClassName": "org.qbroker.monitor.PropertyMonitor",
-    "Site": "LITS",
+    "Site": "DEVOPS",
     "Category": "WDAP",
-    "Description": "Web JSON Configuration Repository",
+    "Description": "Web JSON Configuration Repository for Default",
     "Step": "1",
     "Tolerance": "1",
     "MaxRetry": "2",
@@ -115,10 +115,10 @@
   "rpt_{{item}}": {
     "Name": "rpt_{{item}}",
     "ClassName": "org.qbroker.monitor.ScriptLauncher",
-    "Site": "LITS",
+    "Site": "DEVOPS",
     "Type": "ScriptLauncher",
     "Category": "REPORT",
-    "Description": "report on hostname",
+    "Description": "report on hostname for Default",
     "Step": "1",
     "Tolerance": "0",
     "MaxRetry": "2",
@@ -148,7 +148,7 @@
   "rpt_localhost": {
     "Name": "rpt_localhost",
     "ClassName": "org.qbroker.monitor.ScriptLauncher",
-    "Site": "LITS",
+    "Site": "DEVOPS",
     "Type": "ScriptLauncher",
     "Category": "REPORT",
     "Description": "report on hostname",
@@ -179,6 +179,7 @@
   },
   "rcvr_hb": {
     "Name": "rcvr_hb",
+    "Description": "rcvr for Default",
     "ClassName": "org.qbroker.receiver.HeartbeatGenerator",
     "URI": "hb://localhost",
     "Operation": "generate",
@@ -198,6 +199,7 @@
   },
   "pstr_null": {
     "Name": "pstr_null",
+    "Description": "pstr for Default",
     "ClassName": "org.qbroker.persister.LogPersister",
     "URI": "log:///dev/null",
     "Operation": "append",

@@ -45,25 +45,14 @@
     jar_files: "{{my_jar_files}}"
   notify: "Restart_{{role_name}}"
 
-- name: Template of QFlow.init for {{role_name}}
-  template:
-    src: ../../qbroker/templates/QFlow.init.j2
-    dest: "{{qbroker_dir}}/init.d/S50QFlow_{{service_id}}"
-    owner: "{{qbroker_user}}"
-    group: "{{qbroker_group}}"
-    mode: 0775
-  vars:
-    id: "{{service_id}}"
-    qb_dir: "{{qbroker_dir}}"
-    qb_user: "{{qbroker_user}}"
-  notify: "Restart_{{role_name}}"
-
 - name: Open admin port for {{role_name}}
   iptables:
     chain: INPUT
     destination_port: "{{admin_port}}"
     action: insert
     jump: ACCEPT
+    match: state
+    ctstate: NEW
     protocol: tcp
     state: present
   register: port_admin_result
